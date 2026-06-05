@@ -1,5 +1,27 @@
 ﻿const Task = require('../models/Task');
 
+// Helper: validate dueDate string/value. Returns null when valid, or error message when invalid.
+const validateDueDate = (dueDate) => {
+  if (!dueDate) return null;
+
+  let due;
+  if (typeof dueDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dueDate)) {
+    const [y, m, d] = dueDate.split('-').map(Number);
+    due = new Date(y, m - 1, d);
+  } else {
+    due = new Date(dueDate);
+  }
+
+  if (isNaN(due.getTime())) return 'Invalid dueDate format';
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (due < today) return 'Due date must not be in the past';
+
+  return null;
+};
+
 // @desc  Get all tasks
 // @route GET /api/tasks
 // @access Admin
@@ -41,6 +63,10 @@ const createTask = async (req, res) => {
   const { title, description, status, assignedTo, dueDate } = req.body;
 
   try {
+    // Date validation: ensure dueDate is a valid date string and not in the past
+    const dueDateError = validateDueDate(dueDate);
+    if (dueDateError) return res.status(400).json({ message: dueDateError });
+
     const task = await Task.create({
       title,
       description,
@@ -63,6 +89,11 @@ const updateTask = async (req, res) => {
   try {
     const task = await Task.findById(req.params.id);
     if (!task) return res.status(404).json({ message: 'Task not found' });
+    if (req.body.dueDate) {
+      // Date validation: ensure dueDate is a valid date string and not in the past
+      const dueDateError = validateDueDate(req.body.dueDate);
+      if (dueDateError) return res.status(400).json({ message: dueDateError });
+    }
     // including internal fields like createdBy or __v
     const updated = await Task.findByIdAndUpdate(
       req.params.id,
