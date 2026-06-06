@@ -1,4 +1,5 @@
 ﻿const Task = require('../models/Task');
+const Submission = require('../models/Submission');
 
 // Helper: validate dueDate string/value. Returns null when valid, or error message when invalid.
 const validateDueDate = (dueDate) => {
@@ -114,10 +115,15 @@ const deleteTask = async (req, res) => {
   try {
     const task = await Task.findById(req.params.id);
     if (!task) return res.status(404).json({ message: 'Task not found' });
-    // — orphaned Submission documents remain in DB after task deletion
+    // Remove any submissions that reference this task to avoid orphaned records.
+    // Doing this explicitly here keeps the behavior simple and predictable
+    // (Mongoose does not cascade deletes automatically).
+    await Submission.deleteMany({ taskId: task._id });
+
+    // Delete the task itself after cleaning up related submissions.
     await Task.findByIdAndDelete(req.params.id);
 
-    res.json({ message: 'Task deleted' });
+    res.json({ message: 'Task and related submissions deleted' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
