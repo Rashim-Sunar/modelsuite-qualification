@@ -1,39 +1,40 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import Avatar from '../common/Avatar';
 
 /* ── Clean SVG line-art icons ── */
 const IconDashboard = () => (
   <svg className="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="2" y="2" width="7" height="7" rx="1.5"/>
-    <rect x="11" y="2" width="7" height="7" rx="1.5"/>
-    <rect x="2" y="11" width="7" height="7" rx="1.5"/>
-    <rect x="11" y="11" width="7" height="7" rx="1.5"/>
+    <rect x="2" y="2" width="7" height="7" rx="1.5" />
+    <rect x="11" y="2" width="7" height="7" rx="1.5" />
+    <rect x="2" y="11" width="7" height="7" rx="1.5" />
+    <rect x="11" y="11" width="7" height="7" rx="1.5" />
   </svg>
 );
 
 const IconTasks = () => (
   <svg className="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M7 10l2 2 4-4"/>
-    <rect x="3" y="3" width="14" height="14" rx="2"/>
+    <path d="M7 10l2 2 4-4" />
+    <rect x="3" y="3" width="14" height="14" rx="2" />
   </svg>
 );
 
 const IconLogout = () => (
   <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M13 10H3M13 10l-3-3M13 10l-3 3"/>
-    <path d="M7 4H4a1 1 0 00-1 1v10a1 1 0 001 1h3"/>
+    <path d="M13 10H3M13 10l-3-3M13 10l-3 3" />
+    <path d="M7 4H4a1 1 0 00-1 1v10a1 1 0 001 1h3" />
   </svg>
 );
 
 const navItems = [
   { label: 'My Dashboard', path: '/talent/dashboard', Icon: IconDashboard },
-  { label: 'My Tasks',     path: '/talent/tasks',     Icon: IconTasks     },
+  { label: 'My Tasks', path: '/talent/tasks', Icon: IconTasks },
 ];
 
 const TalentSidebar = () => {
   const { user, logout } = useAuth();
-  const navigate  = useNavigate();
-  const location  = useLocation();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   return (
     <aside className="fixed inset-y-0 left-0 w-[220px] flex flex-col z-50"
@@ -71,9 +72,12 @@ const TalentSidebar = () => {
         <div className="sidebar-divider mb-4" />
         <div className="flex items-center justify-between gap-2 px-1">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-full avatar-talent flex items-center justify-center text-[12px] font-bold text-white shrink-0">
-              {user?.name?.[0]?.toUpperCase() ?? 'T'}
-            </div>
+            <Avatar
+              src={user?.avatar || user?.avatarUrl || user?.profilePicture}
+              name={user?.name || 'Talent'}
+              size={32}
+              className="avatar-talent"
+            />
             <div className="min-w-0">
               <p className="text-[13px] font-semibold truncate max-w-[100px]"
                 style={{ color: '#E5E2E1', fontFamily: 'Inter, sans-serif' }}>

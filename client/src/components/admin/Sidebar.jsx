@@ -1,55 +1,56 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import Avatar from '../common/Avatar';
 
 /* ── Clean SVG line-art icons (no emojis, no AI icons) ── */
 const IconDashboard = () => (
   <svg className="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="2" y="2" width="7" height="7" rx="1.5"/>
-    <rect x="11" y="2" width="7" height="7" rx="1.5"/>
-    <rect x="2" y="11" width="7" height="7" rx="1.5"/>
-    <rect x="11" y="11" width="7" height="7" rx="1.5"/>
+    <rect x="2" y="2" width="7" height="7" rx="1.5" />
+    <rect x="11" y="2" width="7" height="7" rx="1.5" />
+    <rect x="2" y="11" width="7" height="7" rx="1.5" />
+    <rect x="11" y="11" width="7" height="7" rx="1.5" />
   </svg>
 );
 
 const IconTasks = () => (
   <svg className="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M7 10l2 2 4-4"/>
-    <rect x="3" y="3" width="14" height="14" rx="2"/>
+    <path d="M7 10l2 2 4-4" />
+    <rect x="3" y="3" width="14" height="14" rx="2" />
   </svg>
 );
 
 const IconSubmissions = () => (
   <svg className="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M14 2H6a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V4a2 2 0 00-2-2z"/>
-    <path d="M8 10h4M8 14h2M8 6h4"/>
+    <path d="M14 2H6a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V4a2 2 0 00-2-2z" />
+    <path d="M8 10h4M8 14h2M8 6h4" />
   </svg>
 );
 
 const IconTalents = () => (
   <svg className="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M13 7a3 3 0 11-6 0 3 3 0 016 0z"/>
-    <path d="M4 17a6 6 0 0112 0"/>
+    <path d="M13 7a3 3 0 11-6 0 3 3 0 016 0z" />
+    <path d="M4 17a6 6 0 0112 0" />
   </svg>
 );
 
 const IconLogout = () => (
   <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M13 10H3M13 10l-3-3M13 10l-3 3"/>
-    <path d="M7 4H4a1 1 0 00-1 1v10a1 1 0 001 1h3"/>
+    <path d="M13 10H3M13 10l-3-3M13 10l-3 3" />
+    <path d="M7 4H4a1 1 0 00-1 1v10a1 1 0 001 1h3" />
   </svg>
 );
 
 const navItems = [
-  { label: 'Dashboard',   path: '/admin/dashboard',   Icon: IconDashboard   },
-  { label: 'Tasks',       path: '/admin/tasks',       Icon: IconTasks       },
+  { label: 'Dashboard', path: '/admin/dashboard', Icon: IconDashboard },
+  { label: 'Tasks', path: '/admin/tasks', Icon: IconTasks },
   { label: 'Submissions', path: '/admin/submissions', Icon: IconSubmissions },
-  { label: 'Talents',     path: '/admin/talents',     Icon: IconTalents     },
+  { label: 'Talents', path: '/admin/talents', Icon: IconTalents },
 ];
 
 const Sidebar = () => {
   const { user, logout } = useAuth();
-  const navigate  = useNavigate();
-  const location  = useLocation();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   return (
     <aside className="fixed inset-y-0 left-0 w-[240px] flex flex-col z-50"
@@ -87,9 +88,12 @@ const Sidebar = () => {
         <div className="sidebar-divider mb-4" />
         <div className="flex items-center justify-between gap-2 px-1">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-full avatar-admin flex items-center justify-center text-[12px] font-bold text-white shrink-0">
-              {user?.name?.[0]?.toUpperCase() ?? 'A'}
-            </div>
+            <Avatar
+              src={user?.avatar || user?.avatarUrl || user?.profilePicture}
+              name={user?.name || 'Admin'}
+              size={32}
+              className="avatar-admin"
+            />
             <div className="min-w-0">
               <p className="text-[13px] font-semibold truncate max-w-[110px]"
                 style={{ color: '#E5E2E1', fontFamily: 'Inter, sans-serif' }}>
