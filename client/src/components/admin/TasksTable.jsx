@@ -1,15 +1,18 @@
+import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { deleteTask } from '../../api/tasks';
+import ConfirmModal from '../common/ConfirmModal';
 
 /* ── SVG Action Icons ── */
 const IconEdit = () => (
   <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M11 4l5 5M3 16l1-4L14 2a2 2 0 012.83 0l1.17 1.17A2 2 0 0118 5.17L8 15l-4 1z"/>
+    <path d="M11 4l5 5M3 16l1-4L14 2a2 2 0 012.83 0l1.17 1.17A2 2 0 0118 5.17L8 15l-4 1z" />
   </svg>
 );
 
 const IconDelete = () => (
   <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M3 6h14M8 6V4a1 1 0 011-1h2a1 1 0 011 1v2M17 6l-1 12a2 2 0 01-2 2H6a2 2 0 01-2-2L3 6M9 10v5M11 10v5"/>
+    <path d="M3 6h14M8 6V4a1 1 0 011-1h2a1 1 0 011 1v2M17 6l-1 12a2 2 0 01-2 2H6a2 2 0 01-2-2L3 6M9 10v5M11 10v5" />
   </svg>
 );
 
@@ -34,21 +37,37 @@ const fmtDate = (raw) => {
 
 /* ── Status badge class ── */
 const STATUS_CLASS = {
-  Open:      'status-badge-Open',
-  Claimed:   'status-badge-Claimed',
+  Open: 'status-badge-Open',
+  Claimed: 'status-badge-Claimed',
   Submitted: 'status-badge-Submitted',
-  Approved:  'status-badge-Approved',
-  Rejected:  'status-badge-Rejected',
+  Approved: 'status-badge-Approved',
+  Rejected: 'status-badge-Rejected',
 };
 
 const TasksTable = ({ tasks, onEdit, onRefresh }) => {
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState(null);
 
-  const handleDelete = async (id) => {
+  const openConfirm = (id) => {
+    setPendingDeleteId(id);
+    setConfirmOpen(true);
+  };
+
+  const closeConfirm = () => {
+    setPendingDeleteId(null);
+    setConfirmOpen(false);
+  };
+
+  const handleDeleteConfirmed = async () => {
+    if (!pendingDeleteId) return closeConfirm();
     try {
-      await deleteTask(id);
+      await deleteTask(pendingDeleteId);
+      closeConfirm();
       onRefresh();
-    } catch {
-      alert('Failed to delete task');
+    } catch (err) {
+      const msg = err?.response?.data?.message || err?.message || 'Failed to delete task';
+      alert(msg);
+      closeConfirm();
     }
   };
 
@@ -57,8 +76,8 @@ const TasksTable = ({ tasks, onEdit, onRefresh }) => {
       <div className="py-20 text-center" style={{ color: 'rgba(255,255,255,0.3)', fontSize: '14px' }}>
         <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"
           style={{ margin: '0 auto 12px', opacity: 0.3 }} strokeLinecap="round" strokeLinejoin="round">
-          <rect x="3" y="3" width="18" height="18" rx="3"/>
-          <path d="M9 12h6M9 8h6M9 16h4"/>
+          <rect x="3" y="3" width="18" height="18" rx="3" />
+          <path d="M9 12h6M9 8h6M9 16h4" />
         </svg>
         No tasks yet. Create your first task above.
       </div>
@@ -145,7 +164,7 @@ const TasksTable = ({ tasks, onEdit, onRefresh }) => {
                     <IconEdit />
                   </button>
                   <button
-                    onClick={() => handleDelete(task._id)}
+                    onClick={() => openConfirm(task._id)}
                     title="Delete task"
                     className="action-btn action-btn-delete">
                     <IconDelete />
@@ -156,6 +175,19 @@ const TasksTable = ({ tasks, onEdit, onRefresh }) => {
           ))}
         </tbody>
       </table>
+      {createPortal(
+        <ConfirmModal
+          open={confirmOpen}
+          title="Confirm delete"
+          description="Are you sure you want to permanently delete this task? This action cannot be undone."
+          confirmText="Delete"
+          cancelText="Cancel"
+          onConfirm={handleDeleteConfirmed}
+          onClose={closeConfirm}
+          danger
+        />,
+        document.body
+      )}
     </div>
   );
 };
