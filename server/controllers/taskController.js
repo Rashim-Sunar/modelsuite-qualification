@@ -1,5 +1,6 @@
 ﻿const Task = require('../models/Task');
 const Submission = require('../models/Submission');
+const User = require('../models/User');
 
 // Helper: validate dueDate string/value. Returns null when valid, or error message when invalid.
 const validateDueDate = (dueDate) => {
@@ -28,12 +29,80 @@ const validateDueDate = (dueDate) => {
 // @access Admin
 const getAllTasks = async (req, res) => {
   try {
-    const tasks = await Task.find({})
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 10, 1), 100);
+    const skip = (page - 1) * limit;
+
+    const search = (req.query.search || '').trim();
+    const status = (req.query.status || 'All').trim();
+
+    const filters = {};
+
+    if (status && status !== 'All') {
+      filters.status = status;
+    }
+
+    if (search) {
+      const regex = new RegExp(search, 'i');
+      const matchingUsers = await User.find({ name: regex }).select('_id').lean();
+      const matchingUserIds = matchingUsers.map((user) => user._id);
+
+      filters.$or = [
+        { title: regex },
+        { description: regex },
+      ];
+
+      if (matchingUserIds.length > 0) {
+        filters.$or.push({ assignedTo: { $in: matchingUserIds } });
+      }
+    }
+
+    const total = await Task.countDocuments(filters);
+
+    const tasks = await Task.find(filters)
       .populate('assignedTo', 'name email')
       .populate('createdBy', 'name')
+      .skip(skip)
+      .limit(limit)
       .sort({ createdAt: -1 });
 
-    res.json(tasks);
+    const statusCounts = await Task.aggregate([
+      {
+        $group: {
+          _id: '$status',
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const stats = {
+      total: 0,
+      open: 0,
+      submitted: 0,
+      approved: 0,
+    };
+
+    statusCounts.forEach(({ _id, count }) => {
+      stats.total += count;
+      if (_id === 'Open') stats.open = count;
+      if (_id === 'Submitted') stats.submitted = count;
+      if (_id === 'Approved') stats.approved = count;
+    });
+
+    const totalPages = total === 0 ? 1 : Math.ceil(total / limit);
+
+    res.json({
+      tasks,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasPrevPage: page > 1,
+        hasNextPage: page < totalPages,
+      },
+      stats,
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

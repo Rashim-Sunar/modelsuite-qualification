@@ -20,47 +20,59 @@ const IconPlus = () => (
   </svg>
 );
 
-const AdminDashboard = () => {
-  const [tasks, setTasks]           = useState([]);
-  const [showCreate, setShowCreate] = useState(false);
-  const [editTask, setEditTask]     = useState(null);
-  const [search, setSearch]         = useState('');
-  const [statusFilter, setStatusFilter] = useState('All');
+const PAGE_SIZE = 10;
 
-  const loadTasks = async () => {
+const AdminDashboard = () => {
+  const [tasks, setTasks] = useState([]);
+  const [showCreate, setShowCreate] = useState(false);
+  const [editTask, setEditTask] = useState(null);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: PAGE_SIZE,
+    total: 0,
+    totalPages: 1,
+    hasPrevPage: false,
+    hasNextPage: false,
+  });
+  const [stats, setStats] = useState({
+    total: 0,
+    open: 0,
+    submitted: 0,
+    approved: 0,
+  });
+
+  const loadTasks = async (page = currentPage) => {
     try {
-      const { data } = await fetchAllTasks();
-      setTasks(data);
+      const { data } = await fetchAllTasks({
+        page,
+        limit: PAGE_SIZE,
+        search,
+        status: statusFilter,
+      });
+
+      setTasks(data.tasks || []);
+      if (data.pagination) setPagination(data.pagination);
+      if (data.stats) setStats(data.stats);
     } catch {
       alert('Failed to load tasks');
     }
   };
 
   // eslint-disable-next-line
-  useEffect(() => { loadTasks(); }, []);
-
-  const stats = {
-    total:     tasks.length,
-    open:      tasks.filter((t) => t.status === 'Open').length,
-    submitted: tasks.filter((t) => t.status === 'Submitted').length,
-    approved:  tasks.filter((t) => t.status === 'Approved').length,
-  };
+  useEffect(() => { loadTasks(currentPage); }, [currentPage, search, statusFilter]);
 
   const statCards = [
-    { label: 'Total Tasks', value: stats.total,     colorClass: 'stat-card-default', valueColor: '#E5E2E1' },
-    { label: 'Open',        value: stats.open,      colorClass: 'stat-card-blue',    valueColor: '#60A5FA' },
-    { label: 'Submitted',   value: stats.submitted, colorClass: 'stat-card-info',    valueColor: '#60A5FA' },
-    { label: 'Approved',    value: stats.approved,  colorClass: 'stat-card-green',   valueColor: '#34D399' },
+    { label: 'Total Tasks', value: stats.total, colorClass: 'stat-card-default', valueColor: '#E5E2E1' },
+    { label: 'Open', value: stats.open, colorClass: 'stat-card-blue', valueColor: '#60A5FA' },
+    { label: 'Submitted', value: stats.submitted, colorClass: 'stat-card-info', valueColor: '#60A5FA' },
+    { label: 'Approved', value: stats.approved, colorClass: 'stat-card-green', valueColor: '#34D399' },
   ];
 
-  /* Filter tasks */
-  const filteredTasks = tasks.filter((t) => {
-    const matchSearch = !search ||
-      t.title?.toLowerCase().includes(search.toLowerCase()) ||
-      t.assignedTo?.name?.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = statusFilter === 'All' || t.status === statusFilter;
-    return matchSearch && matchStatus;
-  });
+  const startItem = pagination.total === 0 ? 0 : ((pagination.page - 1) * pagination.limit) + 1;
+  const endItem = Math.min(pagination.page * pagination.limit, pagination.total);
 
   return (
     <div className="flex min-h-screen" style={{ background: '#050505' }}>
@@ -120,7 +132,7 @@ const AdminDashboard = () => {
                   border: '1px solid rgba(255,255,255,0.09)',
                   fontFamily: 'Inter, sans-serif',
                 }}>
-                {filteredTasks.length} {filteredTasks.length === 1 ? 'task' : 'tasks'}
+                {pagination.total} {pagination.total === 1 ? 'task' : 'tasks'}
               </span>
             </div>
 
@@ -134,7 +146,10 @@ const AdminDashboard = () => {
                   type="text"
                   placeholder="Search tasks…"
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e) => {
+                    setCurrentPage(1);
+                    setSearch(e.target.value);
+                  }}
                   className="search-input-glass"
                   style={{ minWidth: '180px' }}
                 />
@@ -143,7 +158,10 @@ const AdminDashboard = () => {
               {/* Status filter */}
               <select
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
+                onChange={(e) => {
+                  setCurrentPage(1);
+                  setStatusFilter(e.target.value);
+                }}
                 className="search-input-glass custom-select"
                 style={{ paddingLeft: '12px', cursor: 'pointer' }}>
                 <option value="All">All Status</option>
@@ -156,7 +174,37 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          <TasksTable tasks={filteredTasks} onEdit={setEditTask} onRefresh={loadTasks} />
+          <TasksTable tasks={tasks} onEdit={setEditTask} onRefresh={() => loadTasks(currentPage)} />
+
+          <div className="flex items-center justify-between mt-4" style={{ color: '#6B7280', fontSize: '12px' }}>
+            <span>
+              Showing {startItem} - {endItem} of {pagination.total}
+            </span>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={!pagination.hasPrevPage}
+                className="search-input-glass"
+                style={{ padding: '6px 12px', cursor: pagination.hasPrevPage ? 'pointer' : 'not-allowed', opacity: pagination.hasPrevPage ? 1 : 0.45 }}>
+                Previous
+              </button>
+
+              <span style={{ minWidth: '74px', textAlign: 'center' }}>
+                Page {pagination.page} / {pagination.totalPages}
+              </span>
+
+              <button
+                type="button"
+                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, pagination.totalPages))}
+                disabled={!pagination.hasNextPage}
+                className="search-input-glass"
+                style={{ padding: '6px 12px', cursor: pagination.hasNextPage ? 'pointer' : 'not-allowed', opacity: pagination.hasNextPage ? 1 : 0.45 }}>
+                Next
+              </button>
+            </div>
+          </div>
         </div>
       </main>
 
